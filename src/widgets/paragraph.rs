@@ -401,7 +401,7 @@ mod test {
             Buffer::with_lines(vec![
                 "┌Title──────┐",
                 "│Hello, worl│",
-                "│d!         │",
+                "│ds!        │",
                 "└───────────┘",
             ]),
         );

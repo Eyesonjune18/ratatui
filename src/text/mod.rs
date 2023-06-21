@@ -55,6 +55,7 @@ mod span;
 mod spans;
 #[allow(clippy::module_inception)]
 mod text;
+mod wrap;
 #[allow(deprecated)]
 pub use {
     grapheme::StyledGrapheme, line::Line, masked::Masked, span::Span, spans::Spans, text::Text,

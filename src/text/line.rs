@@ -1,5 +1,7 @@
 #![allow(deprecated)]
 
+use std::rc::Rc;
+
 use super::{Span, Spans, Style, StyledGrapheme};
 use crate::layout::Alignment;
 
@@ -56,6 +58,7 @@ impl Line {
     /// # use ratatui::text::{Line, StyledGrapheme};
     /// # use ratatui::style::{Color, Modifier, Style};
     /// # use std::iter::Iterator;
+    /// # use std::rc::Rc;
     /// let style = Style::default().fg(Color::Yellow);
     /// let line = Line::styled("Text", style);
     /// let style = Style::default().fg(Color::Green).bg(Color::Black);
@@ -63,7 +66,7 @@ impl Line {
     /// assert_eq!(
     ///     vec![
     ///         StyledGrapheme {
-    ///             symbol: "T".to_owned(),
+    ///             symbol: Rc::new("T".to_owned()),
     ///             style: Style {
     ///                 fg: Some(Color::Yellow),
     ///                 bg: Some(Color::Black),
@@ -72,7 +75,7 @@ impl Line {
     ///             },
     ///         },
     ///         StyledGrapheme {
-    ///             symbol: "e".to_owned(),
+    ///             symbol: Rc::new("e".to_owned()),
     ///             style: Style {
     ///                 fg: Some(Color::Yellow),
     ///                 bg: Some(Color::Black),
@@ -81,7 +84,7 @@ impl Line {
     ///             },
     ///         },
     ///         StyledGrapheme {
-    ///             symbol: "x".to_owned(),
+    ///             symbol: Rc::new("x".to_owned()),
     ///             style: Style {
     ///                 fg: Some(Color::Yellow),
     ///                 bg: Some(Color::Black),
@@ -90,7 +93,7 @@ impl Line {
     ///             },
     ///         },
     ///         StyledGrapheme {
-    ///             symbol: "t".to_owned(),
+    ///             symbol: Rc::new("t".to_owned()),
     ///             style: Style {
     ///                 fg: Some(Color::Yellow),
     ///                 bg: Some(Color::Black),
@@ -187,19 +190,37 @@ impl FromIterator<StyledGrapheme> for Line {
         I: IntoIterator<Item = StyledGrapheme>,
     {
         let mut spans = Vec::new();
-        for styled_grapheme in iter {
-            if let Some(Span {
-                content: last_span_content,
-                style: last_span_style,
-            }) = spans.last_mut()
-            {
-                if last_span_style == &styled_grapheme.style {
-                    last_span_content.push_str(&styled_grapheme.symbol);
+        // Buffers are used because the content of each Span is not mutable after it is created.
+        let mut content_buffer = String::new();
+        let mut style_buffer = Style::default();
+        for (i, styled_grapheme) in iter.into_iter().enumerate() {
+            if i == 0 {
+                content_buffer = styled_grapheme.symbol.as_ref().clone();
+                style_buffer = styled_grapheme.style;
+            } else {
+                // If the style of the current grapheme is the same as the previous one,
+                // we can just append the grapheme to the previous content.
+                // This allows us to avoid creating a new Span for each grapheme.
+                if style_buffer == styled_grapheme.style {
+                    content_buffer.push_str(&styled_grapheme.symbol);
                     continue;
+                } else {
+                    spans.push(Span {
+                        content: Rc::new(content_buffer.clone()),
+                        style: style_buffer,
+                    });
+
+                    content_buffer = styled_grapheme.symbol.as_ref().clone();
+                    style_buffer = styled_grapheme.style;
                 }
             }
-            spans.push(Span::styled(styled_grapheme.symbol, styled_grapheme.style));
         }
+
+        // Push the last Span.
+        spans.push(Span {
+            content: Rc::new(content_buffer),
+            style: style_buffer,
+        });
 
         spans.into()
     }

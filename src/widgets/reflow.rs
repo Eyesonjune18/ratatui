@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, vec::IntoIter};
+use std::{collections::VecDeque, rc::Rc, vec::IntoIter};
 
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -461,13 +461,13 @@ where
                         // Reset the horizontal offset since all scrolling has been applied
                         horizontal_offset = 0;
                         // Use the trimmed symbol
-                        trimmed_symbol
+                        Rc::new(trimmed_symbol)
                     } else {
                         // Reduce the horizontal offset by the symbol width since the entire
                         // symbol can be scrolled out of view
                         horizontal_offset -= symbol_width;
                         // An empty string indicates that the symbol will not be visible
-                        String::new()
+                        Rc::new(String::new())
                     }
                 };
                 current_line_width += symbol.width() as u16;
@@ -549,7 +549,7 @@ mod test {
         while let Some((styled, width, alignment)) = composer.next_line() {
             let line = styled
                 .iter()
-                .map(|StyledGrapheme { symbol, .. }| symbol.clone())
+                .map(|StyledGrapheme { symbol, .. }| symbol.as_ref().clone())
                 .collect::<String>();
             assert!(width <= text_area_width);
             lines.push(line);

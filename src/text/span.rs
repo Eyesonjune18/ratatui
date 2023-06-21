@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use super::StyledGrapheme;
 use crate::style::Style;
 use unicode_segmentation::UnicodeSegmentation;
@@ -6,7 +8,7 @@ use unicode_width::UnicodeWidthStr;
 /// A string where all graphemes have the same style.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Span {
-    pub content: String,
+    pub content: Rc<String>,
     pub style: Style,
 }
 
@@ -25,7 +27,7 @@ impl Span {
         T: Into<String>,
     {
         Span {
-            content: content.into(),
+            content: Rc::new(content.into()),
             style: Style::default(),
         }
     }
@@ -46,7 +48,7 @@ impl Span {
         T: Into<String>,
     {
         Span {
-            content: content.into(),
+            content: Rc::new(content.into()),
             style,
         }
     }
@@ -67,6 +69,7 @@ impl Span {
     /// # use ratatui::text::{Span, StyledGrapheme};
     /// # use ratatui::style::{Color, Modifier, Style};
     /// # use std::iter::Iterator;
+    /// # use std::rc::Rc;
     /// let style = Style::default().fg(Color::Yellow);
     /// let span = Span::styled("Text", style);
     /// let style = Style::default().fg(Color::Green).bg(Color::Black);
@@ -74,7 +77,7 @@ impl Span {
     /// assert_eq!(
     ///     vec![
     ///         StyledGrapheme {
-    ///             symbol: "T".to_owned(),
+    ///             symbol: Rc::new("T".to_owned()),
     ///             style: Style {
     ///                 fg: Some(Color::Yellow),
     ///                 bg: Some(Color::Black),
@@ -83,7 +86,7 @@ impl Span {
     ///             },
     ///         },
     ///         StyledGrapheme {
-    ///             symbol: "e".to_owned(),
+    ///             symbol: Rc::new("e".to_owned()),
     ///             style: Style {
     ///                 fg: Some(Color::Yellow),
     ///                 bg: Some(Color::Black),
@@ -92,7 +95,7 @@ impl Span {
     ///             },
     ///         },
     ///         StyledGrapheme {
-    ///             symbol: "x".to_owned(),
+    ///             symbol: Rc::new("x".to_owned()),
     ///             style: Style {
     ///                 fg: Some(Color::Yellow),
     ///                 bg: Some(Color::Black),
@@ -101,7 +104,7 @@ impl Span {
     ///             },
     ///         },
     ///         StyledGrapheme {
-    ///             symbol: "t".to_owned(),
+    ///             symbol: Rc::new("t".to_owned()),
     ///             style: Style {
     ///                 fg: Some(Color::Yellow),
     ///                 bg: Some(Color::Black),
@@ -117,10 +120,10 @@ impl Span {
         self.content
             .graphemes(true)
             .map(move |g| StyledGrapheme {
-                symbol: g.to_owned(),
+                symbol: Rc::new(g.to_owned()),
                 style: base_style.patch(self.style),
             })
-            .filter(|s| s.symbol != "\n")
+            .filter(|s| *s.symbol != "\n")
     }
 
     /// Patches the style an existing Span, adding modifiers from the given style.
